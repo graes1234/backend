@@ -71,7 +71,7 @@ import os
 from model_loader import predict_fabric
 
 app = FastAPI() #fastAPI 서버 객체 생성
-#os.makedirs("uploads", exist_ok=True)
+os.makedirs("uploads", exist_ok=True)
 
 # CORS 설정 
 app.add_middleware(
@@ -80,6 +80,10 @@ app.add_middleware(
     allow_methods=["*"],  # 모든 HTTP 메서드 허용
     allow_headers=["*"],  # 모든 헤더 허용
 )
+
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
 
 #/predict 엔드 포인트
 @app.post("/predict")
@@ -97,6 +101,7 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
