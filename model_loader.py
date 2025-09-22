@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 # 모델 경로
-MODEL_PATH = os.path.join("models", "final_model(1).keras")
+MODEL_PATH = os.path.join("models", "final_model_1.keras")
 
 # 모델 로드 (TensorFlow 2.13 환경에서 저장된 모델)
 model = load_model(MODEL_PATH)
