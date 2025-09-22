@@ -4,9 +4,10 @@ import numpy as np
 import os
 
 # 모델 경로
-MODEL_PATH = os.path.join("models", "final_model_1.keras")
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(ROOT_DIR, "final_model_1.keras")
 
-# 모델 로드 (TensorFlow 2.13 환경에서 저장된 모델)
+# 모델 로드
 model = load_model(MODEL_PATH)
 
 # 클래스 이름 목록 (모델 학습 시 사용한 순서대로)
