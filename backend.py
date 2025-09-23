@@ -95,12 +95,17 @@ async def predict(file: UploadFile = File(...)):
 
     # 모델 추론
     results = predict_fabric(filepath)
-    return {"filename": file.filename, "predictions": results}
+    return {
+        "label": results["label"],
+        "class_index": results["class_index"],
+        "confidence": results["confidence"]
+    }
 
 #서버 실행
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
