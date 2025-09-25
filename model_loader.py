@@ -1,3 +1,4 @@
+"""
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 import numpy as np
@@ -30,5 +31,31 @@ def predict_fabric(filepath: str):
     # 점수 높은 순으로 정렬 후 상위 3개만
     results = sorted(results, key=lambda x: x["score"], reverse=True)[:3]
     return results
+"""
 
+from tensorflow.keras.models import load_model
+import numpy as np
+from PIL import Image
+import requests
+import io
+import os
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(ROOT_DIR, "final_model_1.keras")
+model = load_model(MODEL_PATH)
+
+class_names = [
+    "ACRYLIC", "COTTON", "DENIM", "FUR", "LINEN", "NYLON",
+    "POLYESTER", "PUFFER", "RAYON", "SLIK", "SPANDEX", "VELVET", "WOOL"
+]
+
+def predict_fabric_from_url(file_url: str):
+    response = requests.get(file_url)
+    img = Image.open(io.BytesIO(response.content)).convert("RGB")
+    img = img.resize((224, 224))
+    x = np.array(img) / 255.0
+    x = np.expand_dims(x, axis=0)
+    preds = model.predict(x)[0]
+    results = [{"label": class_names[i], "score": round(float(preds[i]), 2)} for i in range(len(class_names))]
+    results = sorted(results, key=lambda x: x["score"], reverse=True)[:3]
+    return results
