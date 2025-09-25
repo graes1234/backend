@@ -64,7 +64,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 """
-
+"""
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -104,6 +104,38 @@ async def predict(file: UploadFile = File(...)):
 
 #서버 실행
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+"""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from model_loader import predict_fabric_from_url
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class URLItem(BaseModel):
+    url: str
+
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
+
+@app.post("/predict")
+def predict(item: URLItem):
+    results = predict_fabric_from_url(item.url)
+    return {"predictions": results}
+
+if __name__ == "__main__":
+    import uvicorn
+    import os
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 
