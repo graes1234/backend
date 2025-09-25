@@ -31,4 +31,4 @@ def predict_fabric(filepath: str):
     # 점수 높은 순으로 정렬 후 상위 3개만
     results = sorted(results, key=lambda x: x["score"], reverse=True)[:3]
     return results
-/
+
