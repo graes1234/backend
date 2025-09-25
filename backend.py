@@ -115,14 +115,23 @@ if __name__ == "__main__":
 
 
 from fastapi import FastAPI, Form
+from fastapi.middleware.cors import CORSMiddleware
 import requests
 from model_loader import predict_fabric
 import io
 import os
 
-app = FastAPI()
+app = FastAPI()  # 1️⃣ 앱 객체 생성
 
-# 임시 폴더 생성
+# 2️⃣ CORS 미들웨어 설정 (Wix 등 외부에서 fetch 가능하게)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],    # 모든 도메인 허용
+    allow_methods=["*"],    # 모든 HTTP 메서드 허용
+    allow_headers=["*"],    # 모든 헤더 허용
+)
+
+# 3️⃣ 나머지 엔드포인트 정의
 os.makedirs("/tmp", exist_ok=True)
 
 @app.get("/")
@@ -131,25 +140,22 @@ def root():
 
 @app.post("/predict_url")
 async def predict_url(fileUrl: str = Form(...), fileName: str = Form(...)):
-    # 1️⃣ Cloudinary URL에서 이미지 다운로드
     response = requests.get(fileUrl)
     response.raise_for_status()
     img_bytes = io.BytesIO(response.content)
 
-    # 2️⃣ 임시 파일로 저장
     temp_path = f"/tmp/{fileName}"
     with open(temp_path, "wb") as f:
         f.write(img_bytes.getbuffer())
 
-    # 3️⃣ 모델 추론 (Top-3)
     results = predict_fabric(temp_path)
-
     return {"predictions": results}
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))  # Render에서 할당된 포트
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
