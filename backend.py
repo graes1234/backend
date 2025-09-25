@@ -85,26 +85,27 @@ app.add_middleware(
 def read_root():
     return {"message": "Server is running!"}
 
-#/predict 엔드 포인트
+# /predict 엔드포인트
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    # 업로드 파일 저장
     filepath = f"uploads/{file.filename}"
     with open(filepath, "wb") as f:
         f.write(await file.read())
 
     # 모델 추론
     results = predict_fabric(filepath)
+
     return {
-        "label": results["label"],
-        "class_index": results["class_index"],
-        "confidence": results["confidence"]
+        "filename": file.filename,
+        "predictions": results   # 전체 Top-3 리스트 반환
     }
+
 
 #서버 실행
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
