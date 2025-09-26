@@ -108,12 +108,11 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=port)
 """ 
 # URL 형식
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
 from model_loader import predict_fabric
-from fastapi import FastAPI
 from pydantic import BaseModel
 import requests
 from PIL import Image
@@ -121,25 +120,39 @@ from io import BytesIO
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 class FileUrl(BaseModel):
     file_url: str
 
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
+
 @app.post("/predict")
 async def predict(data: FileUrl):
-    # 1️⃣ Wix 서버에서 이미지 다운로드
+    # 1. Wix 서버에서 이미지 다운로드
     response = requests.get(data.file_url)
     if response.status_code != 200:
         return {"error": "파일 다운로드 실패"}
 
-    # 2️⃣ 이미지 열기
+    # 2. 이미지 열기
     image = Image.open(BytesIO(response.content))
 
-    # 3️⃣ 모델 추론 (여기서 predict_fabric 사용)
-    # results = predict_fabric(image)
-    # 임시 예시
-    results = [{"label": "예시_라벨", "score": 0.99}]
+    # 3. 모델 추론 (여기서 predict_fabric 사용)
+    results = predict_fabric(filepath)
+    return {
+        "filename": file.filename,
+        "predictions": results   # 전체 Top-3 리스트 반환
+    }
 
     return {"predictions": results}
+
 
 
 
