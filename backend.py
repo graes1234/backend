@@ -162,7 +162,7 @@ async def predict(data: FileUrl):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=10000)
-"""
+
 #formdata
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -205,5 +205,63 @@ async def predict(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
+"""
+
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+import os
+from model_loader import predict_fabric
+
+app = FastAPI()
+os.makedirs("uploads", exist_ok=True)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    try:
+        if not file:
+            print("🚨 UploadFile 없음")
+            return {"predictions": [], "error": "파일이 업로드되지 않았습니다."}
+
+        # 1️⃣ 파일 저장
+        filepath = f"uploads/{file.filename}"
+        try:
+            with open(filepath, "wb") as f:
+                content = await file.read()
+                f.write(content)
+            print(f"✅ 파일 저장 성공: {filepath}, size={len(content)} bytes")
+        except Exception as e:
+            print("🚨 파일 저장 실패:", e)
+            return {"predictions": [], "error": f"파일 저장 실패: {str(e)}"}
+
+        # 2️⃣ 모델 추론
+        try:
+            results = predict_fabric(filepath)
+            if not results:
+                print("⚠️ 모델 결과 없음")
+                results = []
+            print("✅ 모델 추론 완료:", results)
+        except Exception as e:
+            print("🚨 모델 추론 실패:", e)
+            return {"predictions": [], "error": f"모델 추론 실패: {str(e)}"}
+
+        return {"filename": file.filename, "predictions": results}
+
+    except Exception as e:
+        print("🚨 백엔드 처리 중 에러:", e)
+        return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=10000)
+
+
 
 
