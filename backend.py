@@ -106,7 +106,8 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-""" URL
+""" 
+# URL 형식
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -139,6 +140,7 @@ async def predict(data: FileUrl):
     results = [{"label": "예시_라벨", "score": 0.99}]
 
     return {"predictions": results}
+
 
 
 
