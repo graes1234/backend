@@ -110,16 +110,15 @@ if __name__ == "__main__":
 # URL 형식
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-import os
-from model_loader import predict_fabric
 from pydantic import BaseModel
 import requests
 from PIL import Image
 from io import BytesIO
+from model_loader import predict_fabric  # PIL Image 입력 받는 함수
 
 app = FastAPI()
 
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -136,36 +135,28 @@ def read_root():
 
 @app.post("/predict")
 async def predict(data: FileUrl):
-    # 1. Wix 서버에서 이미지 다운로드
-    response = requests.get(data.file_url)
-    if response.status_code != 200:
-        return {"error": "파일 다운로드 실패"}
+    try:
+        # 1. 이미지 다운로드
+        response = requests.get(data.file_url)
+        response.raise_for_status()  # 실패 시 예외 발생
 
-    # 2. 이미지 열기
-    image = Image.open(BytesIO(response.content))
+        # 2. 이미지 열기
+        image = Image.open(BytesIO(response.content))
 
-    # 3. 모델 추론 (여기서 predict_fabric 사용)
-    results = predict_fabric(filepath)
-    return {
-        "filename": file.filename,
-        "predictions": results   # 전체 Top-3 리스트 반환
-    }
+        # 3. 모델 추론
+        # 기존 코드에서는 filepath 사용, URL 방식에서는 image 객체 사용
+        results = predict_fabric(image)  # PIL Image 객체 전달
 
+        # 4. 안전하게 반환
+        return {"predictions": results}
 
+    except requests.exceptions.RequestException as e:
+        # 다운로드 실패
+        return {"predictions": [], "error": f"파일 다운로드 실패: {str(e)}"}
+    except Exception as e:
+        # PIL 열기, 모델 추론 등 기타 에러
+        return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=10000)
