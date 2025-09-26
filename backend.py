@@ -151,7 +151,6 @@ async def predict(data: FileUrl):
         "predictions": results   # 전체 Top-3 리스트 반환
     }
 
-    return {"predictions": results}
 
 
 
