@@ -160,7 +160,6 @@ async def predict(data: FileUrl):
         return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=10000)
 
 #formdata
@@ -259,8 +258,11 @@ async def predict(file: UploadFile = File(...)):
         print("🚨 백엔드 처리 중 에러:", e)
         return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
 
+#서버 실행
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
