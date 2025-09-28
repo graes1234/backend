@@ -161,8 +161,10 @@ async def predict(data: FileUrl):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
-"""
 
+
+"""
+"""
 #formdata
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -213,6 +215,52 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 10000))  # Render가 주는 PORT 사용
     uvicorn.run(app, host="0.0.0.0", port=port)
+"""
+
+
+# backend/main.py
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+import os
+from model_loader import predict_fabric  # 사용자 모델 추론 함수
+
+app = FastAPI()
+os.makedirs("uploads", exist_ok=True)
+
+# CORS: Wix Publish 도메인 허용
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://your-published-wix-site.com"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    try:
+        # 파일 저장
+        filepath = f"uploads/{file.filename}"
+        with open(filepath, "wb") as f:
+            f.write(await file.read())
+
+        # 모델 추론
+        results = predict_fabric(filepath)
+        return {"filename": file.filename, "predictions": results}
+
+    except Exception as e:
+        return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+
 
 """
 #중계 형식
@@ -249,6 +297,7 @@ async def predict(request: Request):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 """
+
 
 
 
