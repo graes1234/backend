@@ -161,7 +161,6 @@ async def predict(data: FileUrl):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
-"""
 #formdata
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -210,8 +209,8 @@ async def predict(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
-    
-"""중계 형식
+"""
+#중계 형식
 from fastapi import FastAPI, Request
 import os
 from model_loader import predict_fabric  # filepath 입력 받는 함수
@@ -241,7 +240,10 @@ async def predict(request: Request):
     except Exception as e:
         # PIL 열기, 모델 추론 등 기타 에러
         return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
-"""
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=10000)
+
 
 
 
