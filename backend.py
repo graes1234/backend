@@ -210,8 +210,10 @@ async def predict(file: UploadFile = File(...)):
         return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=10000)
-    
+    import os
+    port = int(os.environ.get("PORT", 10000))  # Render가 주는 PORT 사용
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
 """
 #중계 형식
 from fastapi import FastAPI, Request
@@ -247,6 +249,7 @@ async def predict(request: Request):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 """
+
 
 
 
