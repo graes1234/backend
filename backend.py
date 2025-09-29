@@ -163,7 +163,7 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 
 
-"""
+
 #formdata
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -214,10 +214,96 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 10000))  # Render가 주는 PORT 사용
     uvicorn.run(app, host="0.0.0.0", port=port)
+"""
 
 
+# main.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+import os
+import requests
+from io import BytesIO
+from PIL import Image
+import numpy as np
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing import image as keras_image
 
+# -----------------------
+# FastAPI 기본 설정
+# -----------------------
+app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # 필요 시 ["https://내사이트.wixsite.com"] 으로 제한 가능
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# -----------------------
+# 모델 로드
+# -----------------------
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(ROOT_DIR, "final_model_1.keras")
+
+model = load_model(MODEL_PATH)
+
+class_names = [
+    "ACRYLIC", "COTTON", "DENIM", "FUR", "LINEN", "NYLON",
+    "POLYESTER", "PUFFER", "RAYON", "SLIK", "SPANDEX", "VELVET", "WOOL"
+]
+
+# -----------------------
+# 헬스체크 엔드포인트
+# -----------------------
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
+
+# -----------------------
+# Cloudinary URL 기반 예측
+# -----------------------
+@app.post("/predict-url")
+async def predict_url(data: dict):
+    url = data.get("url")
+    if not url:
+        return {"predictions": [], "error": "URL이 제공되지 않았습니다."}
+
+    try:
+        # 1. Cloudinary 이미지 다운로드
+        resp = requests.get(url)
+        if resp.status_code != 200:
+            return {"predictions": [], "error": "Cloudinary 파일 다운로드 실패"}
+
+        # 2. PIL로 이미지 열기
+        img = Image.open(BytesIO(resp.content)).convert("RGB")
+        img = img.resize((224, 224))
+
+        # 3. 전처리
+        x = keras_image.img_to_array(img)
+        x = np.expand_dims(x, axis=0)
+        x = x / 255.0
+
+        # 4. 추론
+        preds = model.predict(x)[0]
+        results = [
+            {"label": class_names[i], "score": round(float(preds[i]), 2)}
+            for i in range(len(class_names))
+        ]
+        results = sorted(results, key=lambda x: x["score"], reverse=True)[:3]
+
+        return {"predictions": results}
+
+    except Exception as e:
+        return {"predictions": [], "error": str(e)}
+
+# -----------------------
+# 실행 (로컬 테스트용)
+# -----------------------
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))  # Render 환경 변수 PORT 사용
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 """
 #중계 형식
@@ -254,6 +340,7 @@ async def predict(request: Request):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 """
+
 
 
 
