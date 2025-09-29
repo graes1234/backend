@@ -217,93 +217,97 @@ if __name__ == "__main__":
 """
 
 
-# main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-import os
-import requests
-from io import BytesIO
+from pydantic import BaseModel
+from tensorflow.keras.models import load_model
 from PIL import Image
 import numpy as np
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image as keras_image
+import requests
+import io
+import os
 
-# -----------------------
-# FastAPI 기본 설정
-# -----------------------
+# ===============================
+# 1. FastAPI 앱 설정
+# ===============================
 app = FastAPI()
 
+# CORS 허용 (Wix, Cloudinary 등 외부 접근 허용)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # 필요 시 ["https://내사이트.wixsite.com"] 으로 제한 가능
+    allow_origins=["*"],  # 필요시 도메인 제한 가능
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -----------------------
-# 모델 로드
-# -----------------------
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(ROOT_DIR, "final_model_1.keras")
+# ===============================
+# 2. 모델 로드
+# ===============================
+MODEL_PATH = "model.h5"  # 학습된 모델 파일
+if not os.path.exists(MODEL_PATH):
+    raise FileNotFoundError(f"모델 파일이 존재하지 않습니다: {MODEL_PATH}")
 
 model = load_model(MODEL_PATH)
 
-class_names = [
-    "ACRYLIC", "COTTON", "DENIM", "FUR", "LINEN", "NYLON",
-    "POLYESTER", "PUFFER", "RAYON", "SLIK", "SPANDEX", "VELVET", "WOOL"
-]
+# 클래스 이름 (예: 원단 종류)
+CLASS_NAMES = ["cotton", "denim", "silk", "velvet", "wool"]  # 학습 시 사용한 클래스 순서에 맞게 수정
 
-# -----------------------
-# 헬스체크 엔드포인트
-# -----------------------
-@app.get("/")
-def read_root():
-    return {"message": "Server is running!"}
+# ===============================
+# 3. Request Body 정의
+# ===============================
+class ImageUrlRequest(BaseModel):
+    url: str
 
-# -----------------------
-# Cloudinary URL 기반 예측
-# -----------------------
+# ===============================
+# 4. 예측 함수
+# ===============================
+def preprocess_image(image: Image.Image, target_size=(224, 224)):
+    """이미지 전처리: 리사이즈 및 스케일링"""
+    image = image.convert("RGB")
+    image = image.resize(target_size)
+    img_array = np.array(image) / 255.0
+    return np.expand_dims(img_array, axis=0)
+
+# ===============================
+# 5. Cloudinary URL 기반 예측 API
+# ===============================
 @app.post("/predict-url")
-async def predict_url(data: dict):
-    url = data.get("url")
-    if not url:
-        return {"predictions": [], "error": "URL이 제공되지 않았습니다."}
-
+async def predict_from_url(request: ImageUrlRequest):
     try:
-        # 1. Cloudinary 이미지 다운로드
-        resp = requests.get(url)
-        if resp.status_code != 200:
-            return {"predictions": [], "error": "Cloudinary 파일 다운로드 실패"}
+        # 1) Cloudinary URL에서 이미지 다운로드
+        response = requests.get(request.url)
+        response.raise_for_status()
+        image = Image.open(io.BytesIO(response.content))
 
-        # 2. PIL로 이미지 열기
-        img = Image.open(BytesIO(resp.content)).convert("RGB")
-        img = img.resize((224, 224))
+        # 2) 전처리
+        processed_img = preprocess_image(image)
 
-        # 3. 전처리
-        x = keras_image.img_to_array(img)
-        x = np.expand_dims(x, axis=0)
-        x = x / 255.0
+        # 3) 모델 예측
+        predictions = model.predict(processed_img)
+        predicted_index = np.argmax(predictions[0])
+        predicted_label = CLASS_NAMES[predicted_index]
+        confidence = float(np.max(predictions[0]) * 100)
 
-        # 4. 추론
-        preds = model.predict(x)[0]
-        results = [
-            {"label": class_names[i], "score": round(float(preds[i]), 2)}
-            for i in range(len(class_names))
-        ]
-        results = sorted(results, key=lambda x: x["score"], reverse=True)[:3]
-
-        return {"predictions": results}
+        return {
+            "predictions": [
+                {
+                    "label": predicted_label,
+                    "confidence": confidence
+                }
+            ]
+        }
 
     except Exception as e:
-        return {"predictions": [], "error": str(e)}
+        return {"error": str(e)}
 
-# -----------------------
-# 실행 (로컬 테스트용)
-# -----------------------
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))  # Render 환경 변수 PORT 사용
-    uvicorn.run(app, host="0.0.0.0", port=port)
+# ===============================
+# 6. 기본 루트 확인용
+# ===============================
+@app.get("/")
+async def root():
+    return {"message": "Backend is running!"}
+
 
 """
 #중계 형식
@@ -340,6 +344,7 @@ async def predict(request: Request):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 """
+
 
 
 
