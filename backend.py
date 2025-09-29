@@ -162,7 +162,7 @@ async def predict(data: FileUrl):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 
-
+"""
 
 #formdata
 from fastapi import FastAPI, UploadFile, File
@@ -214,109 +214,8 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 10000))  # Render가 주는 PORT 사용
     uvicorn.run(app, host="0.0.0.0", port=port)
-"""
 
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image
-import numpy as np
-from PIL import Image
-import requests
-import io
-import os
-
-# ===============================
-# 1. FastAPI 앱 설정
-# ===============================
-app = FastAPI()
-
-# CORS 설정 (Wix 등 외부 도메인 허용)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ===============================
-# 2. 모델 로드
-# ===============================
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(ROOT_DIR, "final_model_1.keras")
-
-if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError(f"모델 파일이 존재하지 않습니다: {MODEL_PATH}")
-
-model = load_model(MODEL_PATH)
-
-# 클래스 이름 (학습 시 사용 순서대로)
-class_names = [
-    "ACRYLIC", "COTTON", "DENIM", "FUR", "LINEN", "NYLON", 
-    "POLYESTER", "PUFFER", "RAYON", "SLIK", "SPANDEX", "VELVET", "WOOL"
-]
-
-# ===============================
-# 3. 요청 바디 정의
-# ===============================
-class ImageUrlRequest(BaseModel):
-    url: str
-
-# ===============================
-# 4. 이미지 예측 함수
-# ===============================
-def predict_fabric_from_image(img: Image.Image):
-    # 이미지 전처리
-    img = img.convert("RGB")
-    img = img.resize((224, 224))
-    x = image.img_to_array(img)
-    x = np.expand_dims(x, axis=0)
-    x = x / 255.0
-
-    # 모델 예측
-    preds = model.predict(x)[0]
-
-    # 상위 3개 클래스 반환
-    results = [{"label": class_names[i], "score": round(float(preds[i]), 2)} for i in range(len(class_names))]
-    results = sorted(results, key=lambda x: x["score"], reverse=True)[:3]
-    return results
-
-# ===============================
-# 5. Cloudinary URL 예측 API
-# ===============================
-@app.post("/predict-url")
-async def predict_from_url(request: ImageUrlRequest):
-    try:
-        # 1) URL에서 이미지 다운로드
-        response = requests.get(request.url)
-        response.raise_for_status()
-        img = Image.open(io.BytesIO(response.content))
-
-        # 2) 예측
-        results = predict_fabric_from_image(img)
-
-        return {"predictions": results}
-
-    except Exception as e:
-        return {"predictions": [], "error": str(e)}
-
-# ===============================
-# 6. 루트 확인용
-# ===============================
-@app.get("/")
-def read_root():
-    return {"message": "Backend is running!"}
-
-# ===============================
-# 7. 로컬 실행용
-# ===============================
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
 
 
 """
@@ -354,6 +253,7 @@ async def predict(request: Request):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 """
+
 
 
 
