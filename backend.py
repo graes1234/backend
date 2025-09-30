@@ -167,6 +167,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
+import requests
 from model_loader import predict_fabric  # filepath 입력 받는 함수
 
 app = FastAPI()
@@ -252,5 +253,6 @@ async def predict(request: Request):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 """
+
 
 
