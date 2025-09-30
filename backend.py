@@ -198,25 +198,8 @@ async def predict(file: UploadFile = File(...)):
         results = []
 
         for item in raw_results[:3]:  # Top-3
-            # 예외 처리: predict_fabric 반환이 (label, conf) 튜플인지 확인
-            if isinstance(item, (list, tuple)) and len(item) >= 2:
-                label, conf = item[0], item[1]
-            else:
-                label, conf = str(item), 0.0
-
-            # 안전하게 float 변환
-            try:
-                conf_value = float(conf)
-            except (ValueError, TypeError):
-                conf_value = 0.0
-
-            # 0~1 범위 벗어나면 0~1로 제한
-            conf_value = min(max(conf_value, 0.0), 1.0)
-
-            results.append({
-                "label": str(label),
-                "confidence": conf_value
-            })
+            label = item[0] if isinstance(item, (list, tuple)) and len(item) > 0 else str(item)
+            results.append({"label": str(label)})
 
         return {
             "filename": file.filename,
@@ -269,6 +252,7 @@ async def predict(request: Request):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 """
+
 
 
 
