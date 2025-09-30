@@ -193,14 +193,19 @@ async def predict(file: UploadFile = File(...)):
             f.write(await file.read())
 
         # 2. 모델 추론
-        results = predict_fabric(filepath)
-        if not results:
-            results = []
+        raw_results = predict_fabric(filepath) 
+        results = []
+        for label, conf in raw_results[:3]:  # Top-3
+            results.append({
+                "label": label,
+                "confidence": float(conf)  # 확률로 변환
+            })
 
-        return {"filename": file.filename, "predictions": results}
-
-    #except Exception as e:
-        #return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
+        return {
+            "filename": file.filename,
+            "predictions": results
+        }
+        
     except requests.exceptions.RequestException as e:
         # 다운로드 실패
         return {"predictions": [], "error": f"파일 다운로드 실패: {str(e)}"}
@@ -209,8 +214,7 @@ async def predict(file: UploadFile = File(...)):
         return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
 
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 10000))  # Render가 주는 PORT 사용
+    port = int(os.environ.get("PORT", 10000)) 
     uvicorn.run(app, host="0.0.0.0", port=port)
     
 """
@@ -248,4 +252,5 @@ async def predict(request: Request):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 """
+
 
