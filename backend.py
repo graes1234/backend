@@ -196,10 +196,15 @@ async def predict(file: UploadFile = File(...)):
         # 2. 모델 추론
         raw_results = predict_fabric(filepath) 
         results = []
+
         for label, conf in raw_results[:3]:  # Top-3
+            try:
+                conf_value = float(conf)  # 안전하게 float 변환
+            except (ValueError, TypeError):
+                conf_value = 0.0  # 변환 실패 시 0.0
             results.append({
                 "label": label,
-                "confidence": float(conf)  # 확률로 변환
+                "confidence": conf_value
             })
 
         return {
@@ -253,6 +258,7 @@ async def predict(request: Request):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 """
+
 
 
 
