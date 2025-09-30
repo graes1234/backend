@@ -162,8 +162,6 @@ async def predict(data: FileUrl):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 
-"""
-
 #formdata
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -214,11 +212,7 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 10000))  # Render가 주는 PORT 사용
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
-
-"""
+    
 #중계 형식
 from fastapi import FastAPI, Request
 import os
@@ -253,6 +247,73 @@ async def predict(request: Request):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=10000)
 """
+#직접 URL 변환
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import uvicorn
+import os
+import requests
+from model_loader import predict_fabric  # filepath 입력 받는 함수
+
+app = FastAPI()
+os.makedirs("uploads", exist_ok=True)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
+
+# JSON body로 URL 받는 방식
+class UrlInput(BaseModel):
+    file_url: str
+
+@app.post("/predict/url")
+async def predict_from_url(data: UrlInput):
+    try:
+        url = data.file_url
+        filename = url.split("/")[-1]
+        filepath = f"uploads/{filename}"
+
+        # 파일 다운로드
+        r = requests.get(url, timeout=10)
+        if r.status_code != 200:
+            return {"predictions": [], "error": f"파일 다운로드 실패 (status {r.status_code})"}
+
+        with open(filepath, "wb") as f:
+            f.write(r.content)
+
+        # 모델 추론
+        results = predict_fabric(filepath)
+        return {"filename": filename, "predictions": results}
+
+    except Exception as e:
+        return {"predictions": [], "error": f"URL 처리 중 에러: {str(e)}"}
+
+# 기존 파일 업로드 방식(FormData) 유지
+@app.post("/predict/file")
+async def predict_from_file(file: UploadFile = File(...)):
+    try:
+        filepath = f"uploads/{file.filename}"
+        with open(filepath, "wb") as f:
+            f.write(await file.read())
+
+        results = predict_fabric(filepath)
+        return {"filename": file.filename, "predictions": results}
+    except Exception as e:
+        return {"predictions": [], "error": f"업로드 파일 처리 중 에러: {str(e)}"}
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))  # Render 환경에서 자동 PORT 사용
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
