@@ -211,11 +211,24 @@ async def predict(file: UploadFile = File(...)):
     # 2. AI 모델 예측
     results = predict_fabric(filepath)  
 
+    # 3. 결과 형식 확인 및 변환
+    if isinstance(results, list):
+        # 클래스 순서와 결과 확률을 짝지어서 dict로 변환
+        fabric_labels = ["acrylic", "cotton", "denim", "fur", "linen", "nylon", "polyester", "silk", "wool"]
+        if isinstance(results[0], list):  # 2차원 배열인 경우
+            results = results[0]
+        results = dict(zip(fabric_labels, results))
+
+    # 4. 가장 확률 높은 재질명 선택
+    predicted_fabric = max(results, key=results.get)
+    
+    """
     # 3. 가장 확률 높은 재질명 선택
     predicted_fabric = max(results, key=results.get)
 
     # 4. DB에서 해당 재질 정보 가져오기
     info = get_fabric_info(predicted_fabric)
+"""
 
     # 5. 반환값 구성
     if info:
@@ -238,11 +251,11 @@ async def predict(file: UploadFile = File(...)):
 
     return response
 
-
 # 서버 실행
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
