@@ -212,11 +212,34 @@ async def predict(file: UploadFile = File(...)):
         # 2. 모델 추론 (라벨 + 확률 포함)
         raw_results = predict_fabric(filepath)
         print("🔥 raw_results:", raw_results)
+        
+        # 3. Top-3 정렬 (score 높은 순)
+        top3 = sorted(raw_results, key=lambda x: x["score"], reverse=True)[:3]
+        top3_list = [{"label": x["label"], "score": float(x["score"])} for x in top3]
 
-        # 예외 처리: 결과가 올바른 리스트인지 확인
-        if not raw_results or not isinstance(raw_results, list):
-            raise ValueError("모델 반환값이 올바르지 않습니다.")
+        # 4. Top-1로 DB 조회
+        top_fabric = top3[0]["label"]
+        info = get_fabric_info(top_fabric)
 
+        # 5. 결과 생성
+        response = {
+            "filename": file.filename,
+            "predictions": top3_list,  # 👈 프론트에서 받는 key 이름 통일
+            "predicted_fabric": top_fabric
+        }
+
+        if info:
+            response.update({
+                "ko_name": info[1],
+                "wash_method": info[2],
+                "dry_method": info[3],
+                "special_note": info[4]
+            })
+        else:
+            response["error"] = "DB에서 해당 재질 정보를 찾을 수 없습니다."
+
+        return response
+"""
         # 3. Top-3 추출
         top3 = raw_results[:3]
         top3_list = [{"label": item["label"], "probability": item["score"]} for item in top3]
@@ -245,13 +268,17 @@ async def predict(file: UploadFile = File(...)):
             }
 
         return response
-
+"""
     except Exception as e:
         print("❌ 서버 오류:", e)
         return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
+    except requests.exceptions.RequestException as e:
+        # 다운로드 실패
+        return {"predictions": [], "error": f"파일 다운로드 실패: {str(e)}"}
 
 # 서버 실행
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
