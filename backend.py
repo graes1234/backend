@@ -161,119 +161,90 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000)) 
     uvicorn.run(app, host="0.0.0.0", port=port)
   """  
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+import sqlite3
+import uvicorn
+import os
+from model_loader import predict_fabric  # AI 예측 함수
+
+app = FastAPI()
+os.makedirs("uploads", exist_ok=True)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # 모든 도메인 허용 (Wix/로컬 테스트용)
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# DB 경로
+DB_PATH = "DB/fabrics.db"
+
+# DB에서 세탁 정보 가져오기
+def get_fabric_info(fabric_name):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT fabric, ko_name, wash_method, dry_method, special_note FROM fabric_care WHERE fabric = ?",
+        (fabric_name,),
+    )
+    result = cur.fetchone()
+    conn.close()
+    return result
 
 
-const API = "https://backend-6i2t.onrender.com/predict";
+# 루트 확인용 엔드포인트
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
 
-const $dropArea = document.getElementById("drop-area");
-const $file = document.getElementById("file");
-const $preview = document.getElementById("preview");
-const $btn = document.getElementById("btn");
-const $result = document.getElementById("result");
-const $loader = document.getElementById("loading");
-const $scanLine = document.querySelector(".scan-line");
-const $resultText = document.getElementById("resultText");
+# /predict : 이미지 업로드 → AI 예측 → DB 조회
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    # 1. 업로드 파일 저장
+    filepath = f"uploads/{file.filename}"
+    with open(filepath, "wb") as f:
+        f.write(await file.read())
 
-// 드래그 & 드롭
-["dragenter", "dragover"].forEach(eventName => {
-  $dropArea.addEventListener(eventName, e => {
-    e.preventDefault();
-    e.stopPropagation();
-    $dropArea.classList.add("highlight");
-  }, false);
-});
+    # 2. AI 모델 예측
+    results = predict_fabric(filepath)  
 
-["dragleave", "drop"].forEach(eventName => {
-  $dropArea.addEventListener(eventName, e => {
-    e.preventDefault();
-    e.stopPropagation();
-    $dropArea.classList.remove("highlight");
-  }, false);
-});
+    # 3. 가장 확률 높은 재질명 선택
+    predicted_fabric = max(results, key=results.get)
 
-$dropArea.addEventListener("drop", e => {
-  const files = e.dataTransfer.files;
-  if (files.length > 0) {
-    $file.files = files;
-    showPreview(files[0]);
-  }
-});
+    # 4. DB에서 해당 재질 정보 가져오기
+    info = get_fabric_info(predicted_fabric)
 
-// 파일 선택 시 미리보기
-$file.addEventListener("change", () => {
-  if ($file.files.length > 0) {
-    showPreview($file.files[0]);
-  }
-});
+    # 5. 반환값 구성
+    if info:
+        response = {
+            "filename": file.filename,
+            "predicted_fabric": predicted_fabric,
+            "ko_name": info[1],
+            "wash_method": info[2],
+            "dry_method": info[3],
+            "special_note": info[4],
+            "predictions": results  # 전체 예측 확률 포함
+        }
+    else:
+        response = {
+            "filename": file.filename,
+            "predicted_fabric": predicted_fabric,
+            "error": "DB에서 해당 재질 정보를 찾을 수 없습니다.",
+            "predictions": results
+        }
 
-function showPreview(file) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    $preview.onload = () => {
-      $scanLine.style.width = $preview.clientWidth + "px";
-    };
-    $preview.src = e.target.result;
+    return response
 
-    // 새 이미지 업로드 시 결과 초기화
-    $result.textContent = "";
-    $resultText.innerHTML = "";
-  };
-  reader.readAsDataURL(file);
-}
 
-// 서버 업로드 & 예측
-$btn.addEventListener("click", async () => {
-  if (!$file.files.length) {
-    alert("이미지를 선택하세요!");
-    return;
-  }
+# 서버 실행
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
-  const fd = new FormData();
-  fd.append("file", $file.files[0]);
 
-  // 로딩 시작
-  $loader.style.display = "inline-block";
-  $scanLine.style.display = "block";
-  $result.textContent = "";
-  $resultText.innerHTML = "";
-
-  try {
-    const res = await fetch(API, { method: "POST", body: fd });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "요청 실패");
-
-    // 모델 예측 결과 출력
-    if (data.predictions && data.predictions.length > 0) {
-      let text = "Top Predictions:\n";
-      data.predictions.forEach((p, idx) => {
-        text += `${idx + 1}. Label: ${p.label}\n`;
-      });
-      $result.textContent = text;
-    } else if (data.error) {
-      $result.textContent = "백엔드 에러: " + data.error;
-    } else {
-      $result.textContent = "예측 결과를 받지 못했습니다.";
-    }
-
-    // DB 세탁법 정보 출력
-    if (data.ko_name) {
-      $resultText.innerHTML = `
-        <h3>${data.ko_name} (${data.predicted_fabric})</h3>
-        <p>🧺 세탁법: ${data.wash_method}</p>
-        <p>🌬️ 건조법: ${data.dry_method}</p>
-        <p>⚠️ 주의사항: ${data.special_note}</p>
-      `;
-    }
-
-  } catch (e) {
-    $result.textContent = "에러: " + e.message;
-    $resultText.innerText = "에러: " + e.message;
-  } finally {
-    // 로딩 종료
-    $loader.style.display = "none";
-    $scanLine.style.display = "none";
-  }
-});
 
 
 
