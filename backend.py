@@ -182,7 +182,8 @@ app.add_middleware(
 # DB 경로
 DB_PATH = "DB/fabrics.db"
 
-# DB에서 세탁 정보 가져오기
+# DB에서 세탁 정보 가져오기\
+"""
 def get_fabric_info(fabric_name):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
@@ -192,6 +193,22 @@ def get_fabric_info(fabric_name):
     )
     result = cur.fetchone()
     conn.close()
+    return result
+    """
+def get_fabric_info(fabric_name):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("SELECT fabric FROM fabric_care")
+    all_fabrics = [row[0] for row in cur.fetchall()]
+    print("📂 DB 안에 들어있는 fabric 목록:", all_fabrics)  # <-- 추가
+
+    cur.execute(
+        "SELECT fabric, ko_name, wash_method, dry_method, special_note FROM fabric_care WHERE fabric = ?",
+        (fabric_name,),
+    )
+    result = cur.fetchone()
+    conn.close()
+    print(f"🔎 검색 fabric_name: {fabric_name}, 결과: {result}")  # <-- 추가
     return result
 
 # 루트 확인용
@@ -209,7 +226,8 @@ async def predict(file: UploadFile = File(...)):
             f.write(await file.read())
 
         # 2. 모델 추론 (라벨 + 확률 포함)
-        raw_results = predict_fabric(filepath)  
+        raw_results = predict_fabric(filepath)
+        print("🔥 raw_results:", raw_results)
 
         # 예외 처리: 결과가 올바른 리스트인지 확인
         if not raw_results or not isinstance(raw_results, list):
@@ -225,7 +243,7 @@ async def predict(file: UploadFile = File(...)):
                 top3_list.append({"label": str(item), "probability": None})
 
         # 4. 상위 1개 DB 조회
-        top_fabric = top3[0]["label"]
+        top_fabric = top3_list[0]["label"] #_list 제외
         info = get_fabric_info(top_fabric)
 
         # 5. JSON 반환
@@ -403,6 +421,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 """
+
 
 
 
