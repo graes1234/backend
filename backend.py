@@ -200,6 +200,56 @@ def get_fabric_info(fabric_name):
 def read_root():
     return {"message": "Server is running!"}
 
+# /predict 엔드포인트
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    try:
+        # 1. 파일 저장
+        filepath = f"uploads/{file.filename}"
+        with open(filepath, "wb") as f:
+            f.write(await file.read())
+
+        # 2. 모델 추론 (라벨 포함)
+        raw_results = predict_fabric(filepath) #?
+        
+        # 3. Top-3 추출
+        top3 = raw_results[:3]
+        top3_list = [{"label": item[0], "probability": item[1]} for item in top3]
+
+        # 4. 상위 1개 DB 조회
+        top_fabric = top3[0][0]
+        info = get_fabric_info(top_fabric)
+
+        # 5. JSON 반환
+        if info:
+            response = {
+                "filename": file.filename,
+                "top3_predictions": top3_list,
+                "predicted_fabric": top_fabric,
+                "ko_name": info[1],
+                "wash_method": info[2],
+                "dry_method": info[3],
+                "special_note": info[4]
+            }
+        else:
+            response = {
+                "filename": file.filename,
+                "top3_predictions": top3_list,
+                "predicted_fabric": top_fabric,
+                "error": "DB에서 해당 재질 정보를 찾을 수 없습니다."
+            }
+
+        return response
+
+    except Exception as e:
+        return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
+
+# 서버 실행
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+"""
 # /predict : 이미지 업로드 → AI 예측 → DB 조회
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
@@ -209,7 +259,7 @@ async def predict(file: UploadFile = File(...)):
         f.write(await file.read())
 
     # 2. AI 모델 예측
-    results = predict_fabric(filepath)  
+    results = predict_fabric(filepath)  ##?
 
     # 3. 결과 형식 확인 및 변환
     if isinstance(results, list):
@@ -228,7 +278,7 @@ async def predict(file: UploadFile = File(...)):
 
     # 4. DB에서 해당 재질 정보 가져오기
     info = get_fabric_info(predicted_fabric)
-"""
+   """
 
     # 5. 반환값 구성
     if info:
@@ -255,6 +305,7 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+"""
 
 
 
