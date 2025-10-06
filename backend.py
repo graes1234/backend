@@ -194,6 +194,103 @@ def get_fabric_info(fabric_name):
     conn.close()
     return result
 
+# 루트 확인용
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
+
+# /predict 엔드포인트
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    try:
+        # 1. 파일 저장
+        filepath = f"uploads/{file.filename}"
+        with open(filepath, "wb") as f:
+            f.write(await file.read())
+
+        # 2. 모델 추론 (라벨 + 확률 포함)
+        raw_results = predict_fabric(filepath)  
+
+        # 예외 처리: 결과가 올바른 리스트인지 확인
+        if not raw_results or not isinstance(raw_results, list):
+            raise ValueError("모델 반환값이 올바르지 않습니다.")
+
+        # 3. Top-3 추출
+        top3 = raw_results[:3]
+        top3_list = []
+        for item in top3:
+            if isinstance(item, (list, tuple)) and len(item) >= 2:
+                top3_list.append({"label": item[0], "probability": item[1]})
+            else:
+                top3_list.append({"label": str(item), "probability": None})
+
+        # 4. 상위 1개 DB 조회
+        top_fabric = top3[0]["label"]
+        info = get_fabric_info(top_fabric)
+
+        # 5. JSON 반환
+        if info:
+            response = {
+                "filename": file.filename,
+                "top3_predictions": top3_list,
+                "predicted_fabric": top_fabric,
+                "ko_name": info[1],
+                "wash_method": info[2],
+                "dry_method": info[3],
+                "special_note": info[4]
+            }
+        else:
+            response = {
+                "filename": file.filename,
+                "top3_predictions": top3_list,
+                "predicted_fabric": top_fabric,
+                "error": "DB에서 해당 재질 정보를 찾을 수 없습니다."
+            }
+
+        return response
+
+    except Exception as e:
+        return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
+
+# 서버 실행
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+"""
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+import sqlite3
+import uvicorn
+import os
+from model_loader import predict_fabric  # AI 예측 함수
+
+app = FastAPI()
+os.makedirs("uploads", exist_ok=True)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # 모든 도메인 허용 (Wix/로컬 테스트용)
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# DB 경로
+DB_PATH = "DB/fabrics.db"
+
+# DB에서 세탁 정보 가져오기
+def get_fabric_info(fabric_name):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT fabric, ko_name, wash_method, dry_method, special_note FROM fabric_care WHERE fabric = ?",
+        (fabric_name,),
+    )
+    result = cur.fetchone()
+    conn.close()
+    return result
+
 
 # 루트 확인용 엔드포인트
 @app.get("/")
@@ -249,7 +346,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 
-"""
+#
 # /predict : 이미지 업로드 → AI 예측 → DB 조회
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
@@ -306,6 +403,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 """
+
 
 
 
