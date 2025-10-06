@@ -225,6 +225,17 @@ async def predict(file: UploadFile = File(...)):
         with open(filepath, "wb") as f:
             f.write(await file.read())
 
+        # 2. 모델 추론 (라벨 포함)
+        raw_results = predict_fabric(filepath)  
+        
+        # 3. Top-3 추출
+        top3 = raw_results[:3]
+        top3_list = [{"label": item["label"], "probability": item["score"]} for item in top3]
+        
+        # 4. 상위 1개 DB 조회
+        top_fabric = top3[0]["label"]
+        info = get_fabric_info(top_fabric)
+"""
         # 2. 모델 추론 (라벨 + 확률 포함)
         raw_results = predict_fabric(filepath)
         print("🔥 raw_results:", raw_results)
@@ -243,9 +254,9 @@ async def predict(file: UploadFile = File(...)):
                 top3_list.append({"label": str(item), "probability": None})
 
         # 4. 상위 1개 DB 조회
-        top_fabric = top3_list[0]["label"] #_list 제외
+        top_fabric = top3[0]["label"] 
         info = get_fabric_info(top_fabric)
-
+"""
         # 5. JSON 반환
         if info:
             response = {
@@ -421,6 +432,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 """
+
 
 
 
