@@ -272,13 +272,13 @@ async def predict(file: UploadFile = File(...)):
     # 4. 가장 확률 높은 재질명 선택
     predicted_fabric = max(results, key=results.get)
     
-    """
+    #
     # 3. 가장 확률 높은 재질명 선택
     predicted_fabric = max(results, key=results.get)
 
     # 4. DB에서 해당 재질 정보 가져오기
     info = get_fabric_info(predicted_fabric)
-   """
+   #
 
     # 5. 반환값 구성
     if info:
@@ -306,6 +306,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 """
+
 
 
 
