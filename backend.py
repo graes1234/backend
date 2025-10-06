@@ -239,7 +239,12 @@ async def predict(file: UploadFile = File(...)):
             response["error"] = "DB에서 해당 재질 정보를 찾을 수 없습니다."
 
         return response
-"""
+        
+    except Exception as e:
+        print("❌ 서버 오류:", e)
+        return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
+        
+        """
         # 3. Top-3 추출
         top3 = raw_results[:3]
         top3_list = [{"label": item["label"], "probability": item["score"]} for item in top3]
@@ -268,17 +273,12 @@ async def predict(file: UploadFile = File(...)):
             }
 
         return response
-"""
-    except Exception as e:
-        print("❌ 서버 오류:", e)
-        return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
-    except requests.exceptions.RequestException as e:
-        # 다운로드 실패
-        return {"predictions": [], "error": f"파일 다운로드 실패: {str(e)}"}
+        """
 
 # 서버 실행
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
