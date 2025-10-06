@@ -105,6 +105,7 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+"""
 
 #formdata
 from fastapi import FastAPI, UploadFile, File
@@ -160,8 +161,8 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000)) 
     uvicorn.run(app, host="0.0.0.0", port=port)
-  """  
-
+"""  
+#DB 추가
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
@@ -279,6 +280,5 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
+"""
 
