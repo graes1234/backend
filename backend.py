@@ -245,7 +245,7 @@ async def predict(file: UploadFile = File(...)):
         print("❌ 서버 오류:", e)
         return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
         
-        """
+        ###
         # 3. Top-3 추출
         top3 = raw_results[:3]
         top3_list = [{"label": item["label"], "probability": item["score"]} for item in top3]
@@ -274,11 +274,12 @@ async def predict(file: UploadFile = File(...)):
             }
 
         return response
-        """
+        ###
 
 # 서버 실행
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 """
+
 
