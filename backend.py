@@ -211,6 +211,9 @@ def get_fabric_info(fabric_name):
     conn.close()
     return result
 
+@app.get("/ping")
+def ping():
+    return {"status": "alive"}
 
 @app.get("/")
 def read_root():
@@ -267,6 +270,7 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
