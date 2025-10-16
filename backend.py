@@ -181,8 +181,25 @@ import uvicorn
 import os
 from model_loader import predict_fabric  # AI 예측 함수
 
+DB_FILE = "/path/to/fabrics.db"
 app = FastAPI()
 os.makedirs("uploads", exist_ok=True)
+
+@app.get("/fabric_info/{fabric}")
+def fabric_info(fabric: str):
+    conn = sqlite3.connect(DB_FILE)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT ko_name, wash_method, dry_method, special_note FROM fabric_care WHERE fabric = ?",
+        (fabric,)
+    )
+    row = cur.fetchone()
+    conn.close()
+    if row:
+        return {"ko_name": row[0], "wash": row[1], "dry": row[2], "note": row[3]}
+    else:
+        return {"ko_name": "", "wash": "", "dry": "", "note": ""}
+
 
 # CORS 설정
 app.add_middleware(
@@ -270,6 +287,7 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
