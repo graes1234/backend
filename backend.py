@@ -221,6 +221,19 @@ def ping():
 def read_root():
     return {"message": "Server is running!"}
 
+@app.get("/fabric_info/{fabric_name}")
+def fabric_info(fabric_name: str):
+    info = get_fabric_info(fabric_name)
+    if info:
+        return {
+            "fabric": info[0],
+            "ko_name": info[1],
+            "wash_method": info[2],
+            "dry_method": info[3],
+            "special_note": info[4]
+        }
+    else:
+        return {"error": "DB에서 해당 재질 정보를 찾을 수 없습니다."}
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
@@ -272,6 +285,7 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
