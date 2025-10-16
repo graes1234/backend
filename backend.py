@@ -181,7 +181,7 @@ import uvicorn
 import os
 from model_loader import predict_fabric  # AI 예측 함수
 
-DB_FILE = "/path/to/fabrics.db"
+DB_FILE = "DB/fabrics.db"
 app = FastAPI()
 os.makedirs("uploads", exist_ok=True)
 
@@ -287,6 +287,7 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
