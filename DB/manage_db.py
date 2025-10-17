@@ -38,7 +38,7 @@ def view_all():
 def update_fabric_name(old_name, new_name):
     conn = sqlite3.connect(DB_FILE)
     cur = conn.cursor()
-    cur.execute("UPDATE fabric_care SET fabric = ? WHERE fabric = ?", (new_name, old_name))
+    cur.execute("UPDATE fabric_care SET fabric = ? WHERE fabric = ?", (slik, silk))
     conn.commit()
     conn.close()
     print(f"{old_name} -> {new_name} 변경 완료 ✅")
