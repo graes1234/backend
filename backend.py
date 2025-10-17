@@ -267,10 +267,23 @@ async def predict(file: UploadFile = File(...)):
         print("❌ 서버 오류:", e)
         return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
 
-
+@app.get("/fabric_info/{fabric_name}")
+def fabric_info(fabric_name: str):
+    info = get_fabric_info(fabric_name)
+    if not info:
+        raise HTTPException(status_code=404, detail="Fabric not found")
+    return {
+        "fabric": info[0],
+        "ko_name": info[1],
+        "wash_method": info[2],
+        "dry_method": info[3],
+        "special_note": info[4]
+    }
+    
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
