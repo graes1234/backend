@@ -34,6 +34,14 @@ def view_all():
         print("\n📘 현재 DB 내용:")
         for row in rows:
             print(row)
+            
+def update_fabric_name(old_name, new_name):
+    conn = sqlite3.connect(DB_FILE)
+    cur = conn.cursor()
+    cur.execute("UPDATE fabric_care SET fabric = ? WHERE fabric = ?", (new_name, old_name))
+    conn.commit()
+    conn.close()
+    print(f"{old_name} -> {new_name} 변경 완료 ✅")
 
 # 예시 실행
 if __name__ == "__main__":
