@@ -278,11 +278,12 @@ def fabric_info(fabric_name: str):
         "wash_method": info[2],
         "dry_method": info[3],
         "special_note": info[4]
-    }
+    
     
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
