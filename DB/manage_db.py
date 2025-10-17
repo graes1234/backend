@@ -39,16 +39,6 @@ import sqlite3
 
 DB_FILE = "fabrics.db"
 
-def update_fabric_name(old_name, new_name):
-    conn = sqlite3.connect(DB_FILE)
-    cur = conn.cursor()
-    cur.execute("UPDATE fabric_care SET fabric = ? WHERE fabric = ?", (new_name, old_name))
-    conn.commit()
-    conn.close()
-    print(f"{old_name} -> {new_name} 변경 완료 ✅")
-
-if __name__ == "__main__":
-    update_fabric_name("silk", "slik")
 
 
 # 예시 실행
