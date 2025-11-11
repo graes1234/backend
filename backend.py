@@ -172,7 +172,8 @@ async def predict(file: UploadFile = File(...)):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-"""
+
+
 ##DB +
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -284,20 +285,168 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 
+"""
+
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+import sqlite3
+import asyncio
+import os
+import json
+import uvicorn
+from model_loader import predict_fabric  # AI 예측 함수
+
+# FastAPI 앱 초기화
+app = FastAPI()
+os.makedirs("uploads", exist_ok=True)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # 모든 도메인 허용 (전시용)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# DB 경로 및 조회 함수
+DB_PATH = "DB/fabrics.db"
+
+def get_fabric_info(fabric_name: str):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT fabric, ko_name, wash_method, dry_method, special_note
+        FROM fabric_care
+        WHERE LOWER(fabric) = LOWER(?)
+        """,
+        (fabric_name,),
+    )
+    result = cur.fetchone()
+    conn.close()
+    return result
 
 
+@app.get("/ping")
+def ping():
+    return {"status": "alive"}
 
 
+@app.get("/")
+def root():
+    return {"message": "AI 섬유 분석 서버 가동 중"}
 
+@app.post("/analyze_stream")
+async def analyze_stream(file: UploadFile = File(...)):
+    async def event_generator():
+        try:
+            steps = [
+                "서버 연결 중...",
+                "모델 불러오는 중...",
+                "이미지 전처리 중...",
+                "예측 계산 중..."
+            ]
+            for step in steps:
+                yield f"data: {step}\n\n"
+                await asyncio.sleep(0.8)
 
+            # 파일을 한 번만 읽어 저장 (중복 읽기 방지)
+            data = await file.read()
+            filepath = f"uploads/{file.filename}"
+            with open(filepath, "wb") as f:
+                f.write(data)
 
+            yield f"data: 결과 분석 중...\n\n"
+            await asyncio.sleep(0.5)
 
+            raw_results = predict_fabric(filepath)
+            top3_list = []
+            for item in raw_results[:3]:
+                if isinstance(item, (list, tuple)) and len(item) >= 2:
+                    top3_list.append({"label": item[0], "probability": item[1]})
+                else:
+                    top3_list.append({"label": str(item), "probability": None})
 
+            top_fabric = top3_list[0]["label"] if top3_list else None
+            info = get_fabric_info(top_fabric) if top_fabric else None
 
+            if info:
+                result = {
+                    "predicted_fabric": top_fabric,
+                    "ko_name": info[1],
+                    "wash_method": info[2],
+                    "dry_method": info[3],
+                    "special_note": info[4],
+                    "top3_predictions": top3_list,
+                }
+            else:
+                result = {
+                    "predicted_fabric": top_fabric,
+                    "top3_predictions": top3_list,
+                    "error": "DB에서 해당 재질 정보를 찾을 수 없습니다."
+                }
 
+            # 프론트가 감지하기 쉬운 형태로 전송
+            yield f"data: [RESULT]{json.dumps(result, ensure_ascii=False)}\n\n"
 
+        except Exception as e:
+            yield f"data: [ERROR]{str(e)}\n\n"
 
+        yield f"data: 스트리밍 완료 ✅\n\n"
 
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+# ✅ 일반 예측 (비동기 아님 — 단독 결과용)
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    try:
+        filepath = f"uploads/{file.filename}"
+        with open(filepath, "wb") as f:
+            f.write(await file.read())
+
+        raw_results = predict_fabric(filepath)
+
+        if not raw_results or not isinstance(raw_results, list):
+            raise ValueError("모델 반환값이 올바르지 않습니다.")
+
+        top3_list = []
+        for item in raw_results[:3]:
+            if isinstance(item, (list, tuple)) and len(item) >= 2:
+                top3_list.append({"label": item[0], "probability": item[1]})
+            else:
+                top3_list.append({"label": str(item), "probability": None})
+
+        top_fabric = top3_list[0]["label"]
+        info = get_fabric_info(top_fabric)
+
+        if info:
+            response = {
+                "filename": file.filename,
+                "top3_predictions": top3_list,
+                "predicted_fabric": top_fabric,
+                "ko_name": info[1],
+                "wash_method": info[2],
+                "dry_method": info[3],
+                "special_note": info[4]
+            }
+        else:
+            response = {
+                "filename": file.filename,
+                "top3_predictions": top3_list,
+                "predicted_fabric": top_fabric,
+                "error": "DB에서 해당 재질 정보를 찾을 수 없습니다."
+            }
+
+        return response
+
+    except Exception as e:
+        return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 
 
