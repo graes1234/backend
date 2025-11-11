@@ -287,33 +287,32 @@ if __name__ == "__main__":
 
 """
 
-from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import sqlite3
+from fastapi.responses import StreamingResponse
 import asyncio
-import os
-import json
+import sqlite3
 import uvicorn
+import os
 from model_loader import predict_fabric  # AI 예측 함수
 
-# FastAPI 앱 초기화
 app = FastAPI()
 os.makedirs("uploads", exist_ok=True)
+
 
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # 모든 도메인 허용 (전시용)
-    allow_credentials=True,
+    allow_origins=["*"],  # 모든 도메인 허용 (Wix/로컬 테스트용)
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# DB 경로 및 조회 함수
+# DB 경로
 DB_PATH = "DB/fabrics.db"
 
-def get_fabric_info(fabric_name: str):
+# DB에서 세탁 정보 가져오기
+def get_fabric_info(fabric_name):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute(
@@ -328,15 +327,13 @@ def get_fabric_info(fabric_name: str):
     conn.close()
     return result
 
-
 @app.get("/ping")
 def ping():
     return {"status": "alive"}
 
-
 @app.get("/")
-def root():
-    return {"message": "AI 섬유 분석 서버 가동 중"}
+def read_root():
+    return {"message": "Server is running!"}
 
 @app.post("/analyze_stream")
 async def analyze_stream(file: UploadFile = File(...)):
@@ -444,10 +441,22 @@ async def predict(file: UploadFile = File(...)):
     except Exception as e:
         return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
 
+@app.get("/fabric_info/{fabric_name}")
+def fabric_info(fabric_name: str):
+    info = get_fabric_info(fabric_name)
+    if not info:
+        raise HTTPException(status_code=404, detail="Fabric not found")
+    return {
+        "fabric": info[0],
+        "ko_name": info[1],
+        "wash_method": info[2],
+        "dry_method": info[3],
+        "special_note": info[4]
+    }
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
 
 
 
