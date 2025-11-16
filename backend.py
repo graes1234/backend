@@ -294,6 +294,7 @@ import asyncio
 import sqlite3
 import uvicorn
 import os
+import json
 from model_loader import predict_fabric  # AI 예측 함수
 
 app = FastAPI()
@@ -457,6 +458,7 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
