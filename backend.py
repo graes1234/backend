@@ -104,7 +104,7 @@ async def predict_result(task_id: str):
         return JSONResponse(result)
     else:
         return JSONResponse({"status": result})
-"""
+
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     async def event_stream():
@@ -174,7 +174,7 @@ async def predict(file: UploadFile = File(...)):
         yield "data: 스트리밍 완료\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
-"""
+
 
 @app.get("/fabric_info/{fabric_name}")
 def fabric_info(fabric_name: str):
@@ -192,5 +192,6 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
