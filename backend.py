@@ -437,7 +437,7 @@ async def predict(file: UploadFile = File(...)):
                 "error": "DB에서 해당 재질 정보를 찾을 수 없습니다."
             }
 
-        return response
+        return {"result_text": html_output}
 
     except Exception as e:
         return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
@@ -458,6 +458,7 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
