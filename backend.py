@@ -46,11 +46,10 @@ def ping():
 def read_root():
     return {"message": "Server is running!"}
 
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+@app.post("/analyze_stream")
+async def analyze_stream(file: UploadFile = File(...)):
     async def event_generator():
         try:
-            # 1. 상태 메시지 SSE
             steps = [
                 "서버 연결 중...",
                 "모델 불러오는 중...",
@@ -59,48 +58,16 @@ async def predict(file: UploadFile = File(...)):
             ]
             for step in steps:
                 yield f"data: {step}\n\n"
-                await asyncio.sleep(0.7)
+                await asyncio.sleep(0.8)
 
-            # 2. 파일 저장
+            # 파일 저장
             data = await file.read()
             filepath = f"uploads/{file.filename}"
             with open(filepath, "wb") as f:
                 f.write(data)
 
-            # 3. 모델 예측
-            raw_results = predict_fabric(filepath)
-            top3_list = []
-            for item in raw_results[:3]:
-                if isinstance(item, (list, tuple)) and len(item) >= 2:
-                    top3_list.append({"label": item[0], "probability": item[1]})
-                else:
-                    top3_list.append({"label": str(item), "probability": None})
-
-            # 4. DB 조회
-            top_fabric = top3_list[0]["label"] if top3_list else None
-            info = get_fabric_info(top_fabric) if top_fabric else None
-
-            # 5. 최종 결과 생성
-            if info:
-                result = {
-                    "filename": file.filename,
-                    "top3_predictions": top3_list,
-                    "predicted_fabric": top_fabric,
-                    "ko_name": info[1],
-                    "wash_method": info[2],
-                    "dry_method": info[3],
-                    "special_note": info[4]
-                }
-            else:
-                result = {
-                    "filename": file.filename,
-                    "top3_predictions": top3_list,
-                    "predicted_fabric": top_fabric,
-                    "error": "DB에서 해당 재질 정보를 찾을 수 없습니다."
-                }
-
-            # 6. 프론트가 기존처럼 처리할 수 있도록 [RESULT]로 전송
-            yield f"data: [RESULT]{json.dumps(result, ensure_ascii=False)}\n\n"
+            yield f"data: 결과 분석 중...\n\n"
+            await asyncio.sleep(0.5)
 
         except Exception as e:
             yield f"data: [ERROR]{str(e)}\n\n"
@@ -108,6 +75,52 @@ async def predict(file: UploadFile = File(...)):
         yield f"data: 스트리밍 완료 ✅\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    try:
+        # 1. 파일 저장
+        filepath = f"uploads/{file.filename}"
+        with open(filepath, "wb") as f:
+            f.write(await file.read())
+
+        # 2. 모델 예측
+        raw_results = predict_fabric(filepath)
+
+        top3_list = []
+        for item in raw_results[:3]:
+            if isinstance(item, (list, tuple)) and len(item) >= 2:
+                top3_list.append({"label": item[0], "probability": item[1]})
+            else:
+                top3_list.append({"label": str(item), "probability": None})
+
+        # 3. Top1으로 DB 조회
+        top_fabric = top3_list[0]["label"]
+        info = get_fabric_info(top_fabric)
+
+        # 4. 결과 생성
+        if info:
+            response = {
+                "filename": file.filename,
+                "top3_predictions": top3_list,
+                "predicted_fabric": top_fabric,
+                "ko_name": info[1],
+                "wash_method": info[2],
+                "dry_method": info[3],
+                "special_note": info[4]
+            }
+        else:
+            response = {
+                "filename": file.filename,
+                "top3_predictions": top3_list,
+                "predicted_fabric": top_fabric,
+                "error": "DB에서 해당 재질 정보를 찾을 수 없습니다."
+            }
+
+        return response
+
+    except Exception as e:
+        return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
 
 """
 async def predict(file: UploadFile = File(...)):
@@ -171,6 +184,7 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
