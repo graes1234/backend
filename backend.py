@@ -143,11 +143,11 @@ def get_fabric_info(fabric_name):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute(
-        ###
+        """
         SELECT fabric, ko_name, wash_method, dry_method, special_note
         FROM fabric_care
         WHERE LOWER(fabric) = LOWER(?)
-        ###,
+        """,
         (fabric_name,),
     )
     result = cur.fetchone()
@@ -386,6 +386,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 """
+
 
 
 
