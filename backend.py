@@ -116,6 +116,7 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 """
+"""
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
@@ -142,11 +143,11 @@ def get_fabric_info(fabric_name):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute(
-        """
+        ###
         SELECT fabric, ko_name, wash_method, dry_method, special_note
         FROM fabric_care
         WHERE LOWER(fabric) = LOWER(?)
-        """,
+        ###,
         (fabric_name,),
     )
     result = cur.fetchone()
@@ -223,6 +224,168 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-    
+
+"""
+
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import uvicorn
+import os
+import sqlite3
+from fastapi.responses import FileResponse, StreamingResponse
+import json
+from model_loader import predict_fabric
+import asyncio
+import time
+
+app = FastAPI()
+os.makedirs("uploads", exist_ok=True)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 모든 도메인 허용 (Wix/로컬 테스트용)
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# DB 경로
+DB_PATH = "DB/fabrics.db"
+
+# DB에서 세탁 정보 가져오기
+def get_fabric_info(fabric_name):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT fabric, ko_name, wash_method, dry_method, special_note FROM fabric_care WHERE LOWER(fabric) = LOWER(?)",
+        (fabric_name,),
+    )
+    result = cur.fetchone()
+    conn.close()
+    return result
+
+@app.get("/ping")
+def ping():
+    return {"status": "alive"}
+
+@app.get("/")
+def read_root():
+    return {"message": "Server is running!"}
+
+@app.post("/predict_stream")
+async def predict_stream(file: UploadFile = File(...)):
+
+    # 파일 저장
+    file_bytes = await file.read()
+    filepath = f"uploads/{file.filename}"
+    with open(filepath, "wb") as f:
+        f.write(file_bytes)
+
+    async def event_generator():
+        # 1) 단계별 진행상태
+        steps = [
+            "🌐🔌💫서버 연결 중...",
+            "🧠📦⏳모델 불러오는 중...",
+            "🔍⚡📊결과 예측 중..."
+        ]
+
+        for step in steps:
+            yield json.dumps({"status": step}) + "\n"
+            await asyncio.sleep(0.3)
+
+        # 2) 실제 모델 추론
+        raw_results = predict_fabric(filepath)
+        top3 = sorted(raw_results, key=lambda x: x.get("score", 0), reverse=True)[:3]
+        predictions = [{"label": x["label"], "score": round(float(x["score"]), 4)} for x in top3]
+
+        top_fabric = top3[0]["label"]
+        info = get_fabric_info(top_fabric)
+
+        response = {
+            "filename": file.filename,
+            "predictions": predictions,
+            "predicted_fabric": top_fabric,
+        }
+
+        if info:
+            response.update({
+                "ko_name": info[1],
+                "wash_method": info[2],
+                "dry_method": info[3],
+                "special_note": info[4],
+            })
+
+        # 3) 최종 JSON 한 줄
+        yield json.dumps({"status": "✅🎉✨예측 완료!", "result": response}) + "\n"
+
+    return StreamingResponse(event_generator(), media_type="text/plain")
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    try:
+        # 1. 파일 저장
+        filepath = f"uploads/{file.filename}"
+        with open(filepath, "wb") as f:
+            f.write(await file.read())
+
+        # 2. 모델 추론
+        raw_results = predict_fabric(filepath)
+        print("🔥 raw_results:", raw_results)
+
+        # 3. 예측 결과 정제 (Top3)
+        # 예: raw_results = [{"label": "cotton", "score": 0.87}, {"label": "polyester", "score": 0.09}, ...]
+        top3 = sorted(raw_results, key=lambda x: x.get("score", 0), reverse=True)[:3]
+        predictions = [
+            {"label": x["label"], "score": round(float(x["score"]), 4)} for x in top3
+        ]
+
+        # 4. Top1으로 DB 조회
+        top_fabric = top3[0]["label"]
+        info = get_fabric_info(top_fabric)
+
+        # 5. 결과 생성
+        response = {
+            "filename": file.filename,
+            "predictions": predictions,
+            "predicted_fabric": top_fabric,
+        }
+
+        if info:
+            response.update({
+                "ko_name": info[1],
+                "wash_method": info[2],
+                "dry_method": info[3],
+                "special_note": info[4]
+            })
+        else:
+            response["error"] = "DB에서 해당 재질 정보를 찾을 수 없습니다."
+
+        return response
+
+    except Exception as e:
+        print("❌ 서버 오류:", e)
+        return {"predictions": [], "error": f"서버 처리 중 에러: {str(e)}"}
+
+@app.get("/fabric_info/{fabric_name}")
+def fabric_info(fabric_name: str):
+    info = get_fabric_info(fabric_name)
+    if not info:
+        raise HTTPException(status_code=404, detail="Fabric not found")
+    return {
+        "fabric": info[0],
+        "ko_name": info[1],
+        "wash_method": info[2],
+        "dry_method": info[3],
+        "special_note": info[4]
+    }
+
+
+# 서버 실행
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+
 
 
