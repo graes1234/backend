@@ -115,8 +115,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 
-"""
-
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
@@ -224,9 +222,9 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+"""
 
-
-""" 스트림 기준
+ 스트림 기준
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -385,9 +383,6 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-"""
-
-
 
 
 
