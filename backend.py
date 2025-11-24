@@ -1,4 +1,3 @@
-"""
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
@@ -25,11 +24,11 @@ def get_fabric_info(fabric_name):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute(
-        ###
+        """
         SELECT fabric, ko_name, wash_method, dry_method, special_note
         FROM fabric_care
         WHERE LOWER(fabric) = LOWER(?)
-        ###,
+        """,
         (fabric_name,),
     )
     result = cur.fetchone()
@@ -106,8 +105,8 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-"""
 
+"""
 #스트림 기준
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -267,6 +266,9 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+"""
+
 
 
 
