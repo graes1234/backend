@@ -327,12 +327,12 @@ async def predict_stream(file: UploadFile = File(...)):
         filepath = f"uploads/{file.filename}"
         with open(filepath, "wb") as f:
             f.write(file_bytes)
-        #await asyncio.sleep(0.1)
+        await asyncio.sleep(0.1)
 
         # 2. 이미지 전처리
         yield json.dumps({"status": "🧼🧪🔧 이미지 전처리 중..."}) + "\n"
         x = load_and_preprocess(filepath)
-        #await asyncio.sleep(0.1)
+        await asyncio.sleep(0.1)
 
         # 3. 예측 시작
         yield json.dumps({"status": "🔍⚡📊결과 예측 중..."}) + "\n"
@@ -438,5 +438,6 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
