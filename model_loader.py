@@ -42,7 +42,8 @@ import os
 print("🧠📦⏳모델 불러오는 중...")
 
 # 모델 경로
-MODEL_PATH = os.path.join("models", "final_model_1.keras")
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(ROOT_DIR, "final_model_1.keras")
 
 # 모델 로드 (TensorFlow 2.13 환경에서 저장된 모델)
 model = load_model(MODEL_PATH)
@@ -81,6 +82,5 @@ def predict_fabric(filepath: str):
     # top-3 정렬
     results = sorted(results, key=lambda x: x["score"], reverse=True)[:3]
     return results
-
 
 
