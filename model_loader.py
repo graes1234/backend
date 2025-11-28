@@ -51,7 +51,7 @@ model = load_model(MODEL_PATH)
 # 클래스 이름 목록 (모델 학습 시 사용한 순서대로)
 class_names = [
     "ACRYLIC", "COTTON", "DENIM", "FUR", "LINEN", "NYLON", 
-    "POLYESTER", "PUFFER", "RAYON", "SLIK", "SPANDEX", "VELVET", "WOOL"
+    "POLYESTER", "PUFFER", "RAYON", "SILK", "SPANDEX", "VELVET", "WOOL"
 ]
 
 def load_and_preprocess(filepath: str):
