@@ -200,6 +200,26 @@ def get_fabric_info(fabric_name):
     result = cur.fetchone()
     conn.close()
     return result
+    
+#방명록 DB
+GUESTBOOK_DB = "DB/guestbook.db"
+
+# 방명록 DB 초기화
+def init_guestbook_db():
+    conn = sqlite3.connect(GUESTBOOK_DB)
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS guestbook (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            contactInfo TEXT,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
 
 @app.get("/ping")
 def ping():
@@ -214,6 +234,7 @@ async def read_root():
 
 @app.on_event("startup")
 async def startup_event():
+    init_guestbook_db()
     global model_ready
     try:
         _ = model.predict(np.zeros((1, 224, 224, 3)))  # 더미 예측
@@ -345,6 +366,7 @@ def fabric_info(fabric_name: str):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
