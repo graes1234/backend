@@ -362,10 +362,62 @@ def fabric_info(fabric_name: str):
         "special_note": info[4]
     }
 
+#방명록 관련 API
+#글 저장
+@app.post("/guestbook")
+def add_guestbook(data: dict):
+    name = data.get("name")
+    contact = data.get("contactInfo")
+    message = data.get("message")
+
+    conn = sqlite3.connect(GUESTBOOK_DB)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO guestbook (name, contactInfo, message) VALUES (?, ?, ?)",
+        (name, contact, message)
+    )
+    conn.commit()
+    last_id = cur.lastrowid
+    conn.close()
+
+    return {"id": last_id, "success": True}
+
+#전체 불러오기
+@app.get("/guestbook")
+def get_guestbook():
+    conn = sqlite3.connect(GUESTBOOK_DB)
+    cur = conn.cursor()
+    cur.execute("SELECT id, name, contactInfo, message, created_at FROM guestbook ORDER BY id DESC")
+    rows = cur.fetchall()
+    conn.close()
+
+    result = []
+    for r in rows:
+        result.append({
+            "id": r[0],
+            "name": r[1],
+            "contactInfo": r[2],
+            "message": r[3],
+            "created_at": r[4]
+        })
+    return result
+
+#개별 삭제
+@app.delete("/guestbook/{entry_id}")
+def delete_guestbook(entry_id: int):
+    conn = sqlite3.connect(GUESTBOOK_DB)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM guestbook WHERE id = ?", (entry_id,))
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+
 # 서버 실행
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
