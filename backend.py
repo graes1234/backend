@@ -172,6 +172,13 @@ import asyncio
 import time
 from fastapi.staticfiles import StaticFiles
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+DEMO_IMAGE_DIR = os.path.join(BASE_DIR, "image")
+os.makedirs(DEMO_IMAGE_DIR, exist_ok=True)
+
+app.mount("/image", StaticFiles(directory=DEMO_IMAGE_DIR), name="demo-images")
+
 app = FastAPI()
 os.makedirs("uploads", exist_ok=True)
 
@@ -235,8 +242,6 @@ async def read_root():
 @app.get("/demo_files")
 def get_demo_files():
     demo_dir = os.path.join(BASE_DIR, "image")
-
-    # 폴더 없으면 자동 생성
     os.makedirs(demo_dir, exist_ok=True)
 
     files = [
@@ -421,6 +426,7 @@ def delete_guestbook(entry_id: int):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
