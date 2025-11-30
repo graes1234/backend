@@ -232,7 +232,19 @@ async def read_root():
         return FileResponse(index_path)
     return {"message": "Server is running!"}
 
+@app.get("/demo_files")
+def get_demo_files():
+    demo_dir = os.path.join(BASE_DIR, "image")
 
+    # 폴더 없으면 자동 생성
+    os.makedirs(demo_dir, exist_ok=True)
+
+    files = [
+        f for f in os.listdir(demo_dir)
+        if f.lower().endswith((".jpg", ".jpeg", ".png"))
+    ]
+
+    return {"files": files}
 
 @app.post("/predict_stream")
 async def predict_stream(file: UploadFile = File(...), demo: str = Form("0")):
@@ -409,6 +421,7 @@ def delete_guestbook(entry_id: int):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
