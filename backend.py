@@ -174,11 +174,6 @@ from fastapi.staticfiles import StaticFiles
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DEMO_IMAGE_DIR = os.path.join(BASE_DIR, "image")
-os.makedirs(DEMO_IMAGE_DIR, exist_ok=True)
-
-app.mount("/image", StaticFiles(directory=DEMO_IMAGE_DIR), name="demo-images")
-
 app = FastAPI()
 os.makedirs("uploads", exist_ok=True)
 
@@ -195,6 +190,11 @@ app.add_middleware(
 
 # DB 경로
 DB_PATH = "DB/fabrics.db"
+
+DEMO_IMAGE_DIR = os.path.join(BASE_DIR, "image")
+os.makedirs(DEMO_IMAGE_DIR, exist_ok=True)
+
+app.mount("/image", StaticFiles(directory=DEMO_IMAGE_DIR), name="demo-images")
 
 # DB에서 세탁 정보 가져오기
 def get_fabric_info(fabric_name):
@@ -426,6 +426,7 @@ def delete_guestbook(entry_id: int):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
