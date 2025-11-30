@@ -160,7 +160,7 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=port)
 """
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
@@ -232,22 +232,10 @@ async def read_root():
         return FileResponse(index_path)
     return {"message": "Server is running!"}
 
-@app.on_event("startup")
-async def startup_event():
-    init_guestbook_db()
-    global model_ready
-    try:
-        _ = model.predict(np.zeros((1, 224, 224, 3)))  # 더미 예측
-        model_ready = True
-    except:
-        model_ready = False
 
-@app.get("/server_ready")
-async def server_ready():
-    return {"ready": model_ready}
 
 @app.post("/predict_stream")
-async def predict_stream(file: UploadFile = File(...)):
+async def predict_stream(file: UploadFile = File(...), demo: str = Form("0")):
     async def event_generator(): #event_stream
         # 1. 이미지 파일 저장
         yield json.dumps({"status": "📁⏳💾 이미지 저장 중..."}) + "\n"
@@ -255,15 +243,19 @@ async def predict_stream(file: UploadFile = File(...)):
         filepath = f"uploads/{file.filename}"
         with open(filepath, "wb") as f:
             f.write(file_bytes)
-        await asyncio.sleep(0.1)
+        if demo == "1":
+            await asyncio.sleep(1)
 
         # 2. 이미지 전처리
         yield json.dumps({"status": "🧼🧪🔧 이미지 전처리 중..."}) + "\n"
         x = load_and_preprocess(filepath)
-        await asyncio.sleep(0.1)
+        if demo == "1":
+            await asyncio.sleep(1)
 
         # 3. 예측 시작
         yield json.dumps({"status": "🔍⚡📊결과 예측 중..."}) + "\n"
+        if demo == "1":
+            await asyncio.sleep(1)
 
         #  실제 모델 예측 (걸리는 시간 그대로 스트리밍에 반영됨)
         preds = run_inference(x)
@@ -417,6 +409,7 @@ def delete_guestbook(entry_id: int):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
