@@ -253,13 +253,14 @@ def get_demo_files():
 
 @app.post("/predict_stream")
 async def predict_stream(file: UploadFile = File(...), demo: str = Form("0")):
-    async def event_generator(): #event_stream
-        # 1. 이미지 파일 저장
-        yield json.dumps({"status": "📁⏳💾 이미지 저장 중..."}) + "\n"
-        file_bytes = await file.read()
+    file_bytes = await file.read()
         filepath = f"uploads/{file.filename}"
         with open(filepath, "wb") as f:
             f.write(file_bytes)
+            
+    async def event_generator(): #event_stream
+        # 1. 이미지 파일 저장
+        yield json.dumps({"status": "📁⏳💾 이미지 저장 중..."}) + "\n"
         if demo == "1":
             await asyncio.sleep(1)
 
@@ -426,6 +427,7 @@ def delete_guestbook(entry_id: int):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
