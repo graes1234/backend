@@ -20,7 +20,11 @@ model_ready = False
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # 모든 도메인 허용 (Wix/로컬 테스트용)
+    allow_origins=[
+        "https://rkawk123.github.io",
+        "https://rkawk123.github.io/",
+        "http://localhost:5500"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -270,6 +274,7 @@ def delete_guestbook(entry_id: int):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
