@@ -53,8 +53,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://rkawk123.github.io",
-        "https://rkawk123.github.io/",
-        "http://localhost:5500",
+        "https://*.github.io",
+        "http://localhost:5500"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -294,4 +294,5 @@ def delete_guestbook(entry_id: int):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
