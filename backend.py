@@ -148,17 +148,17 @@ async def predict_stream(file: UploadFile = File(...), demo: str = Form("0")):
             f.write(data)
 
         async def event_gen():
-            yield json.dumps({"status": "🔌 서버 연결 중..."}) + "\n"
+            yield json.dumps({"status": "🔌⏳🌐 서버 연결 중..."}) + "\n"
             if demo == "1": await asyncio.sleep(1)
 
-            yield json.dumps({"status": "📁 이미지 저장 중..."}) + "\n"
+            yield json.dumps({"status": "📁⏳💾 이미지 저장 중..."}) + "\n"
             if demo == "1": await asyncio.sleep(1)
 
-            yield json.dumps({"status": "🧪 전처리 중..."}) + "\n"
+            yield json.dumps({"status": "🧼🧪🔧 이미지 전처리 중..."}) + "\n"
             x = load_and_preprocess(filepath)
             if demo == "1": await asyncio.sleep(1)
 
-            yield json.dumps({"status": "🔍 예측 중..."}) + "\n"
+            yield json.dumps({"status": "🔍⚡📊 결과 예측 중..."}) + "\n"
             preds = run_inference(x)
 
             # Top3
@@ -188,7 +188,7 @@ async def predict_stream(file: UploadFile = File(...), demo: str = Form("0")):
                     "special_note": info[4],
                 })
 
-            yield json.dumps({"status": "✅ 완료", "result": result}) + "\n"
+            yield json.dumps({"status": "✅🎉✨ 예측 완료!", "result": result}) + "\n"
 
         return StreamingResponse(event_gen(), media_type="text/plain")
 
@@ -294,3 +294,4 @@ def delete_guestbook(entry_id: int):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
