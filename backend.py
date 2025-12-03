@@ -30,11 +30,14 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(IMAGE_DIR, exist_ok=True)
 os.makedirs(DB_DIR, exist_ok=True)
 
-# 세탁정보 DB (읽기 전용)
-DB_PATH = os.path.join(DB_DIR, "fabrics.db")
+BASE_RUNTIME_DIR = "/tmp/backend_runtime"
+DB_DIR = os.path.join(BASE_RUNTIME_DIR, "db")
 
-# 방명록 DB (쓰기/읽기)
-GUESTBOOK_DB = os.path.join(DB_DIR, "guestbook.db")
+os.makedirs(DB_DIR, exist_ok=True)
+
+DB_PATH = os.path.join(DB_DIR, "fabrics.db")         # 읽기용은 복사해둠
+GUESTBOOK_DB = os.path.join(DB_DIR, "guestbook.db")  # 쓰기용 DB는 여기 저장됨
+
 
 # =========================
 # FastAPI 앱 / CORS
@@ -365,3 +368,4 @@ def delete_guestbook(entry_id: int):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
