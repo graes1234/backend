@@ -97,6 +97,11 @@ async def predict_stream(file: UploadFile = File(...), demo: str = Form("0")):
         f.write(file_bytes)
             
     async def event_generator(): #event_stream
+        # 0. 서버 연결 중…
+        yield json.dumps({"status": "🔌⏳🌐 서버 연결 중..."}) + "\n"
+        if demo == "1":
+            await asyncio.sleep(1)
+        
         # 1. 이미지 파일 저장
         yield json.dumps({"status": "📁⏳💾 이미지 저장 중..."}) + "\n"
         if demo == "1":
@@ -265,5 +270,6 @@ def delete_guestbook(entry_id: int):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
