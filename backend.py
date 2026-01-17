@@ -1,7 +1,3 @@
-# ============================================
-# 📌 최종 통합 FastAPI 백엔드 (앱 + 웹 OK)
-# ============================================
-
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
@@ -20,9 +16,7 @@ from model_loader import (
     class_names,
 )
 
-# ------------------------------------
-# 📌 기본 경로 설정
-# ------------------------------------
+# 기본 경로 설정
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 IMAGE_DIR = os.path.join(BASE_DIR, "image")
@@ -32,18 +26,16 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(IMAGE_DIR, exist_ok=True)
 os.makedirs(DB_DIR, exist_ok=True)
 
-# -------- DB 파일 --------
+# DB 파일
 FABRIC_DB_PATH = os.path.join(DB_DIR, "fabrics.db")
 GUESTBOOK_DB = os.path.join(DB_DIR, "guestbook.db")
 
-# ------------------------------------
-# 📌 FastAPI 생성 + CORS 전체 허용
-# ------------------------------------
+# FastAPI 생성 + CORS 전체 허용
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # 앱 + 웹 모두 허용
+    allow_origins=["*"],     
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,9 +45,7 @@ app.add_middleware(
 app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="demo-images")
 
 
-# ------------------------------------
-# 📌 DB 유틸
-# ------------------------------------
+# DB 유틸
 def get_fabric_info(fabric_name: str):
     conn = sqlite3.connect(FABRIC_DB_PATH)
     cur = conn.cursor()
@@ -94,9 +84,7 @@ def startup():
     init_guestbook_db()
 
 
-# ------------------------------------
-# 📌 기본 API
-# ------------------------------------
+# 기본 API
 @app.get("/ping")
 def ping():
     return {"status": "alive"}
@@ -113,9 +101,6 @@ def get_demo_files():
     return {"files": files}
 
 
-# ------------------------------------
-# 📌 스트리밍 예측 (앱에서 사용)
-# ------------------------------------
 @app.post("/predict_stream")
 async def predict_stream(file: UploadFile = File(...), demo: str = Form("0")):
 
@@ -165,9 +150,6 @@ async def predict_stream(file: UploadFile = File(...), demo: str = Form("0")):
     return StreamingResponse(event_gen(), media_type="text/plain")
 
 
-# ------------------------------------
-# 📌 일반 예측
-# ------------------------------------
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
 
@@ -197,10 +179,6 @@ async def predict(file: UploadFile = File(...)):
 
     return res
 
-
-# ------------------------------------
-# 📌 앱에서 반드시 필요한 세탁정보 API
-# ------------------------------------
 @app.get("/fabric_info/{fabric}")
 def fabric_info(fabric: str):
     info = get_fabric_info(fabric)
@@ -216,9 +194,7 @@ def fabric_info(fabric: str):
     }
 
 
-# ------------------------------------
-# 📌 방명록 API
-# ------------------------------------
+# 방명록 API
 @app.post("/guestbook")
 def guestbook_add(data: dict):
     conn = sqlite3.connect(GUESTBOOK_DB)
@@ -255,10 +231,7 @@ def guestbook_delete(entry_id: int):
     conn.close()
     return {"success": True}
 
-
-# ------------------------------------
-# 📌 RUN
-# ------------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
