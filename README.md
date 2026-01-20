@@ -15,7 +15,7 @@
 - 서버 로그 및 오류 메시지를 통해 요청 처리 흐름 디버깅
 
 ## 사용 기술
-- Language: JavaScript, Python
+- Language: Python
 - Framework: FastAPI
 - Database: PostgreSQL
 - 기타: Git, GitHub
