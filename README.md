@@ -14,6 +14,14 @@
 - 데이터베이스와의 통신을 서버 내부 로직으로 한정하여 클라이언트 직접 접근 차단
 - 서버 로그 및 오류 메시지를 통해 요청 처리 흐름 디버깅
 
+## 구현 흐름
+<img width="70%" height="70%" alt="1  구현 흐름" src="https://github.com/user-attachments/assets/e41ab338-075b-4ab0-8a7d-13d6e33f1a72" />
+
+
+## 결과 화면
+<img width="70%" height="70%" alt="1  결과 화면" src="https://github.com/user-attachments/assets/27b0f578-71b1-4be0-bd9c-9ce04a9d1fc1" />
+
+
 ## 사용 기술
 - Language: Python
 - Framework: FastAPI
